@@ -195,9 +195,99 @@ You should see the following response:
 
 ---
 
-## **What’s Next?**
+## **Part 2: User Registration and Database Models**
 
-In **Part 2**, we’ll implement user registration and add endpoints for creating, fetching, updating, and deleting users. Stay tuned!
+In **Part 2**, we dive into designing the **User model**, implementing **user registration**, and securing passwords using **Werkzeug**. Here’s what you’ll learn:
+
+### **What’s Covered in Part 2**
+1. **Designing the User Model**:
+   - Added fields for `username`, `email`, and `password_hash`.
+   - Implemented password hashing using Werkzeug.
+
+2. **Implementing User Registration**:
+   - Created a `/api/register` endpoint for user registration.
+   - Added input validation and duplicate checks.
+
+3. **Testing the Registration Endpoint**:
+   - Tested the endpoint using `curl` and Postman.
+   - Verified the database to ensure data is stored correctly.
+
+### **Code Example**
+#### **User Model (`app/models.py`)**
+```python
+from . import db
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
+```
+
+#### **Registration Endpoint (`app/routes.py`)**
+```python
+from flask import Blueprint, request, jsonify
+from .models import User
+from . import db
+
+bp = Blueprint('api', __name__, url_prefix='/api')
+
+@bp.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+
+    # Validate input
+    if not data or 'username' not in data or 'email' not in data or 'password' not in data:
+        return jsonify({"error": "Username, email, and password are required"}), 400
+
+    # Check if the username or email already exists
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({"error": "Username already exists"}), 400
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"error": "Email already exists"}), 400
+
+    # Create a new user
+    new_user = User(username=data['username'], email=data['email'])
+    new_user.set_password(data['password'])  # Hash the password
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email
+    }), 201
+```
+
+### **Testing the Endpoint**
+#### **Using `curl`**
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "email": "test@example.com", "password": "testpass"}' http://127.0.0.1:5000/api/register
+```
+
+#### **Expected Response**
+```json
+{
+  "id": 1,
+  "username": "testuser",
+  "email": "test@example.com"
+}
+```
+
+---
+
+## **What’s Next?**
+In **Part 3**, we’ll implement **user authentication** using JSON Web Tokens (JWT). Stay tuned!
 
 ---
 
