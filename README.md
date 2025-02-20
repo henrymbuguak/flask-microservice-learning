@@ -1,10 +1,14 @@
-# **Part 1: Setting Up the Project**
+# **User Management Microservice Tutorial Series**
 
-Welcome to **Part 1** of the tutorial series: **"Build a Production-Ready User Management Microservice with Flask and SQLAlchemy: A Step-by-Step Guide"**. In this part, we’ll set up the foundation for our **User Management Microservice**. By the end of this tutorial, you’ll have a basic Flask application with SQLAlchemy configured, ready for adding features like user registration, authentication, and more.
+Welcome to the **User Management Microservice Tutorial Series**! In this series, we’ll build a production-ready microservice using **Flask** and **SQLAlchemy**. Each part of the series focuses on a specific aspect of the application, from setup to deployment.
 
 ---
 
-## **What You’ll Learn in Part 1**
+## **Part 1: Setting Up the Project**
+
+In **Part 1**, we set up the foundation for our microservice. Here’s what we covered:
+
+### **What You’ll Learn in Part 1**
 - How to set up a Python project with Flask and SQLAlchemy.
 - How to structure your project for scalability.
 - How to configure a SQLite database for development.
@@ -12,24 +16,16 @@ Welcome to **Part 1** of the tutorial series: **"Build a Production-Ready User M
 
 ---
 
-## **Prerequisites**
-Before we begin, ensure you have the following installed:
-- **Python 3.7+**: Download and install Python from [python.org](https://www.python.org/).
-- **pip**: Python’s package manager (comes pre-installed with Python).
-- **Basic knowledge of Python**: Familiarity with Python syntax and concepts will be helpful.
+### **Step-by-Step Guide for Part 1**
 
----
-
-## **Step 1: Create a Project Directory**
+#### **Step 1: Create a Project Directory**
 Start by creating a directory for your project:
 ```bash
 mkdir user-management-microservice
 cd user-management-microservice
 ```
 
----
-
-## **Step 2: Set Up a Virtual Environment**
+#### **Step 2: Set Up a Virtual Environment**
 A virtual environment isolates your project dependencies from the global Python installation. Create and activate a virtual environment:
 
 ### **On macOS/Linux:**
@@ -46,9 +42,7 @@ venv\Scripts\activate
 
 Once activated, your terminal prompt will show the virtual environment name (`venv`).
 
----
-
-## **Step 3: Install Required Packages**
+#### **Step 3: Install Required Packages**
 Install the necessary Python packages using `pip`:
 ```bash
 pip install Flask SQLAlchemy Flask-SQLAlchemy
@@ -59,9 +53,7 @@ Here’s what each package does:
 - **SQLAlchemy**: An ORM (Object-Relational Mapping) tool for database interactions.
 - **Flask-SQLAlchemy**: Integrates SQLAlchemy with Flask.
 
----
-
-## **Step 4: Create the Project Structure**
+#### **Step 4: Create the Project Structure**
 Organize your project with the following structure:
 ```
 user-management-microservice/
@@ -74,17 +66,7 @@ user-management-microservice/
 ├── requirements.txt
 ```
 
-### **File Descriptions**
-1. **`app/__init__.py`**: Initializes the Flask app and SQLAlchemy.
-2. **`app/models.py`**: Defines the database models (e.g., `User`).
-3. **`app/routes.py`**: Contains the API routes (e.g., `/api/users`).
-4. **`config.py`**: Stores configuration settings (e.g., database URL).
-5. **`run.py`**: Entry point to run the application.
-6. **`requirements.txt`**: Lists the project dependencies.
-
----
-
-## **Step 5: Write the Configuration File**
+#### **Step 5: Write the Configuration File**
 Create a `config.py` file to store your application’s configuration:
 ```python
 import os
@@ -94,9 +76,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False  # Disable modification tracking
 ```
 
----
-
-## **Step 6: Initialize the Flask Application**
+#### **Step 6: Initialize the Flask Application**
 In `app/__init__.py`, initialize the Flask app and SQLAlchemy:
 ```python
 from flask import Flask
@@ -122,9 +102,7 @@ def create_app():
     return app
 ```
 
----
-
-## **Step 7: Define the Database Model**
+#### **Step 7: Define the Database Model**
 In `app/models.py`, define the `User` model:
 ```python
 from . import db
@@ -139,9 +117,7 @@ class User(db.Model):
         return f'<User {self.username}>'
 ```
 
----
-
-## **Step 8: Add a Basic Route**
+#### **Step 8: Add a Basic Route**
 In `app/routes.py`, create a simple route to test the setup:
 ```python
 from flask import Blueprint, jsonify
@@ -155,9 +131,7 @@ def test():
     return jsonify({"message": "Welcome to the User Management Microservice!"})
 ```
 
----
-
-## **Step 9: Create the Entry Point**
+#### **Step 9: Create the Entry Point**
 In `run.py`, create the entry point to run the application:
 ```python
 from app import create_app
@@ -168,9 +142,7 @@ if __name__ == '__main__':
     app.run(debug=True)
 ```
 
----
-
-## **Step 10: Run the Application**
+#### **Step 10: Run the Application**
 Start the application by running:
 ```bash
 python run.py
@@ -287,7 +259,24 @@ curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "e
 ---
 
 ## **What’s Next?**
+
 In **Part 3**, we’ll implement **user authentication** using JSON Web Tokens (JWT). Stay tuned!
+
+---
+
+## **Summary**
+In **Part 1**, we:
+1. Set up a Flask project with SQLAlchemy.
+2. Created a basic project structure.
+3. Configured a SQLite database.
+4. Added a simple route to test the setup.
+
+In **Part 2**, we:
+1. Designed the `User` model with password hashing.
+2. Implemented a user registration endpoint with input validation and duplicate checks.
+3. Tested the registration endpoint using `curl` and Postman.
+
+You now have a fully functional user registration system! In the next part, we’ll add authentication to secure your microservice.
 
 ---
 
