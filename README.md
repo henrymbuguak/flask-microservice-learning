@@ -258,26 +258,241 @@ curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "e
 
 ---
 
-## **What’s Next?**
+## **Part 3: Completing CRUD Operations with JWT Authentication**
 
-In **Part 3**, we’ll implement **user authentication** using JSON Web Tokens (JWT). Stay tuned!
+In **Part 3**, we’ll complete the **CRUD operations** for the `User` model and secure them using **JWT authentication**. Here’s what you’ll learn:
+
+### **What’s Covered in Part 3**
+1. **Implementing CRUD Operations**:
+   - Fetch all users.
+   - Fetch a single user by ID.
+   - Update a user’s details.
+   - Delete a user.
+
+2. **Securing Endpoints with JWT Authentication**:
+   - Protect routes using JWT tokens.
+   - Implement a login endpoint to generate tokens.
+
+3. **Testing the Endpoints**:
+   - Test the CRUD operations and authentication using `curl` or Postman.
+
+---
+
+### **Step-by-Step Guide for Part 3**
+
+#### **Step 1: Install Flask-JWT-Extended**
+
+We’ll use the `Flask-JWT-Extended` library to handle JWT authentication. Install it using `pip`:
+
+```bash
+pip install flask-jwt-extended
+```
+
+#### **Step 2: Configure JWT in the Application**
+
+Update `config.py` to include JWT configuration:
+
+```python
+import os
+
+class Config:
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///app.db')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-secret-key')  # Change this to a secure key
+```
+
+Update `app/__init__.py` to initialize JWT:
+```python
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager
+from config import Config
+
+db = SQLAlchemy()
+jwt = JWTManager()
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    jwt.init_app(app)
+
+    with app.app_context():
+        from . import routes
+        app.register_blueprint(routes.bp)
+
+        db.create_all()
+
+    return app
+```
+
+#### **Step 3: Implement the Login Endpoint**
+
+In `app/routes.py`, add the login endpoint to generate JWT tokens:
+
+```python
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token
+from .models import User
+from . import db
+
+bp = Blueprint('api', __name__, url_prefix='/api')
+
+@bp.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    # Validate input
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"error": "Username and password are required"}), 400
+
+    username = data['username']
+    password = data['password']
+
+    # Find the user
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        # Generate a JWT token
+        access_token = create_access_token(identity=str(user.id))  # Ensure identity is a string
+        return jsonify(access_token=access_token), 200
+
+    return jsonify({"error": "Invalid credentials"}), 401
+```
+
+#### **Step 4: Complete CRUD Operations**
+
+Let’s implement the remaining CRUD operations for the `User` model.
+
+### **4.1: Fetch All Users**
+
+Add a route to fetch all users:
+
+```python
+from flask_jwt_extended import jwt_required
+
+@bp.route('/users', methods=['GET'])
+@jwt_required()
+def get_all_users():
+    users = User.query.all()
+    return jsonify([{
+        "id": user.id,
+        "username": user.username,
+        "email": user.email
+    } for user in users])
+```
+
+### **4.2: Fetch a Single User**
+
+Add a route to fetch a single user by ID:
+
+```python
+@bp.route('/users/<int:id>', methods=['GET'])
+@jwt_required()
+def get_user(id):
+    user = User.query.get_or_404(id)
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email
+    })
+```
+
+### **4.3: Update a User**
+
+Add a route to update a user’s details:
+
+```python
+@bp.route('/users/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_user(id):
+    user = User.query.get_or_404(id)
+    data = request.get_json()
+
+    if 'username' in data:
+        user.username = data['username']
+    if 'email' in data:
+        user.email = data['email']
+    if 'password' in data:
+        user.set_password(data['password'])
+
+    db.session.commit()
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email
+    })
+```
+
+### **4.4: Delete a User**
+
+Add a route to delete a user:
+
+```python
+@bp.route('/users/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(id):
+    user = User.query.get_or_404(id)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "User deleted successfully"})
+```
+
+#### **Step 5: Test the Endpoints**
+
+Let’s test the CRUD endpoints using `curl` or Postman.
+
+### **5.1: Log in to Get a JWT Token**
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "password": "testpass"}' http://127.0.0.1:5000/api/login
+```
+
+### **5.2: Fetch All Users**
+
+```bash
+curl -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users
+```
+
+### **5.3: Fetch a Single User**
+
+```bash
+curl -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users/1
+```
+
+### **5.4: Update a User**
+
+```bash
+curl -X PUT -H "Authorization: Bearer <your-access-token>" -H "Content-Type: application/json" -d '{"username": "updateduser"}' http://127.0.0.1:5000/api/users/1
+```
+
+### **5.5: Delete a User**
+
+```bash
+curl -X DELETE -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users/1
+```
+
+---
+
+## **What’s Next?**
+In **Part 4**, we’ll add **error handling** and **input validation** to make the application more robust. Stay tuned!
 
 ---
 
 ## **Summary**
-In **Part 1**, we:
-1. Set up a Flask project with SQLAlchemy.
-2. Created a basic project structure.
-3. Configured a SQLite database.
-4. Added a simple route to test the setup.
 
-In **Part 2**, we:
-1. Designed the `User` model with password hashing.
-2. Implemented a user registration endpoint with input validation and duplicate checks.
-3. Tested the registration endpoint using `curl` and Postman.
+In this tutorial, we:
 
-You now have a fully functional user registration system! In the next part, we’ll add authentication to secure your microservice.
+1. Installed and configured `Flask-JWT-Extended` for JWT authentication.
+2. Implemented a login endpoint to generate JWT tokens.
+3. Completed CRUD operations for the `User` model.
+4. Secured all endpoints using JWT authentication.
+5. Tested the endpoints using `curl`.
+
+You now have a fully functional user management system! In the next part, we’ll improve error handling and input validation.
 
 ---
 
 Let me know if you have any questions or need further assistance! 🚀
+
+---
