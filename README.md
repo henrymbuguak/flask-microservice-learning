@@ -281,17 +281,13 @@ In **Part 3**, we’ll complete the **CRUD operations** for the `User` model and
 ### **Step-by-Step Guide for Part 3**
 
 #### **Step 1: Install Flask-JWT-Extended**
-
 We’ll use the `Flask-JWT-Extended` library to handle JWT authentication. Install it using `pip`:
-
 ```bash
 pip install flask-jwt-extended
 ```
 
 #### **Step 2: Configure JWT in the Application**
-
 Update `config.py` to include JWT configuration:
-
 ```python
 import os
 
@@ -328,9 +324,7 @@ def create_app():
 ```
 
 #### **Step 3: Implement the Login Endpoint**
-
 In `app/routes.py`, add the login endpoint to generate JWT tokens:
-
 ```python
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
@@ -361,13 +355,10 @@ def login():
 ```
 
 #### **Step 4: Complete CRUD Operations**
-
 Let’s implement the remaining CRUD operations for the `User` model.
 
 ### **4.1: Fetch All Users**
-
 Add a route to fetch all users:
-
 ```python
 from flask_jwt_extended import jwt_required
 
@@ -383,9 +374,7 @@ def get_all_users():
 ```
 
 ### **4.2: Fetch a Single User**
-
 Add a route to fetch a single user by ID:
-
 ```python
 @bp.route('/users/<int:id>', methods=['GET'])
 @jwt_required()
@@ -399,9 +388,7 @@ def get_user(id):
 ```
 
 ### **4.3: Update a User**
-
 Add a route to update a user’s details:
-
 ```python
 @bp.route('/users/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -425,9 +412,7 @@ def update_user(id):
 ```
 
 ### **4.4: Delete a User**
-
 Add a route to delete a user:
-
 ```python
 @bp.route('/users/<int:id>', methods=['DELETE'])
 @jwt_required()
@@ -439,57 +424,213 @@ def delete_user(id):
 ```
 
 #### **Step 5: Test the Endpoints**
-
 Let’s test the CRUD endpoints using `curl` or Postman.
 
 ### **5.1: Log in to Get a JWT Token**
-
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "password": "testpass"}' http://127.0.0.1:5000/api/login
 ```
 
 ### **5.2: Fetch All Users**
-
 ```bash
 curl -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users
 ```
 
 ### **5.3: Fetch a Single User**
-
 ```bash
 curl -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users/1
 ```
 
 ### **5.4: Update a User**
-
 ```bash
 curl -X PUT -H "Authorization: Bearer <your-access-token>" -H "Content-Type: application/json" -d '{"username": "updateduser"}' http://127.0.0.1:5000/api/users/1
 ```
 
 ### **5.5: Delete a User**
-
 ```bash
 curl -X DELETE -H "Authorization: Bearer <your-access-token>" http://127.0.0.1:5000/api/users/1
 ```
 
 ---
 
+## **Part 4: Error Handling and Input Validation**
+
+In **Part 4**, we’ll enhance the application by adding **error handling** and **input validation**. Here’s what you’ll learn:
+
+### **What’s Covered in Part 4**
+1. **Global Error Handling**:
+   - Handle common HTTP errors like 404 (Not Found) and 500 (Internal Server Error).
+   - Return meaningful error messages to the client.
+
+2. **Input Validation**:
+   - Validate user input using `marshmallow`.
+   - Ensure data integrity and prevent invalid data from entering the system.
+
+3. **Testing Error Handling and Validation**:
+   - Test error responses and validation using `curl` or Postman.
+
+---
+
+### **Step-by-Step Guide for Part 4**
+
+#### **Step 1: Add Global Error Handling**
+Add global error handlers to handle common HTTP errors.
+
+### **Update `app/__init__.py`**
+```python
+from flask import jsonify
+
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    db.init_app(app)
+    jwt.init_app(app)
+
+    # Register error handlers
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Not Found", "message": "The requested resource was not found"}), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify({"error": "Internal Server Error", "message": "Something went wrong on the server"}), 500
+
+    with app.app_context():
+        from . import routes
+        app.register_blueprint(routes.bp)
+
+        db.create_all()
+
+    return app
+```
+
+#### **Step 2: Add Input Validation**
+Use `marshmallow` to validate user input for the `/api/register` and `/api/login` endpoints.
+
+### **Install Marshmallow**
+Install `marshmallow` using `pip`:
+```bash
+pip install marshmallow
+```
+
+### **Create a Validation Schema**
+Create a new file `app/schemas.py` to define validation schemas:
+```python
+from marshmallow import Schema, fields, ValidationError
+
+class UserSchema(Schema):
+    username = fields.Str(required=True)
+    email = fields.Email(required=True)
+    password = fields.Str(required=True)
+
+# Create an instance of the schema
+user_schema = UserSchema()
+```
+
+### **Update the Registration Endpoint**
+Update the `/api/register` endpoint in `app/routes.py` to use the validation schema:
+```python
+from .schemas import user_schema, ValidationError
+
+@bp.route('/register', methods=['POST'])
+def register():
+    try:
+        # Validate and deserialize the input data
+        data = user_schema.load(request.get_json())
+    except ValidationError as err:
+        return jsonify({"error": "Validation Error", "messages": err.messages}), 400
+
+    # Check if the username or email already exists
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({"error": "Username already exists"}), 400
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"error": "Email already exists"}), 400
+
+    # Create a new user
+    new_user = User(username=data['username'], email=data['email'])
+    new_user.set_password(data['password'])
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email
+    }), 201
+```
+
+### **Update the Login Endpoint**
+Update the `/api/login` endpoint in `app/routes.py` to use the validation schema:
+```python
+@bp.route('/login', methods=['POST'])
+def login():
+    try:
+        # Validate and deserialize the input data
+        data = user_schema.load(request.get_json())
+    except ValidationError as err:
+        return jsonify({"error": "Validation Error", "messages": err.messages}), 400
+
+    username = data['username']
+    password = data['password']
+
+    # Find the user
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        # Generate a JWT token
+        access_token = create_access_token(identity=str(user.id))
+        return jsonify(access_token=access_token), 200
+
+    return jsonify({"error": "Invalid credentials"}), 401
+```
+
+#### **Step 3: Test Error Handling and Validation**
+Let’s test the error handling and validation using `curl` or Postman.
+
+### **Test 404 Error**
+Try accessing a non-existent endpoint:
+```bash
+curl http://127.0.0.1:5000/api/nonexistent
+```
+
+### **Expected Response**
+```json
+{
+  "error": "Not Found",
+  "message": "The requested resource was not found"
+}
+```
+
+### **Test Validation Errors**
+Send invalid data to the `/api/register` endpoint:
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "email": "invalid-email", "password": "testpass"}' http://127.0.0.1:5000/api/register
+```
+
+### **Expected Response**
+```json
+{
+  "error": "Validation Error",
+  "messages": {
+    "email": ["Not a valid email address."]
+  }
+}
+```
+
+---
+
 ## **What’s Next?**
-In **Part 4**, we’ll add **error handling** and **input validation** to make the application more robust. Stay tuned!
+In **Part 5**, we’ll add **logging** and **monitoring** to the application to track requests, errors, and performance. Stay tuned!
 
 ---
 
 ## **Summary**
-
 In this tutorial, we:
+1. Added global error handling for 404 and 500 errors.
+2. Implemented input validation using `marshmallow`.
+3. Tested error handling and validation using `curl`.
 
-1. Installed and configured `Flask-JWT-Extended` for JWT authentication.
-2. Implemented a login endpoint to generate JWT tokens.
-3. Completed CRUD operations for the `User` model.
-4. Secured all endpoints using JWT authentication.
-5. Tested the endpoints using `curl`.
-
-You now have a fully functional user management system! In the next part, we’ll improve error handling and input validation.
+Your microservice is now more robust and user-friendly! In the next part, we’ll add logging and monitoring to make it production-ready.
 
 ---
 
