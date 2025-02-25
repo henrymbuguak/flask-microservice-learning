@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from .schemas import user_schema, ValidationError
 from .models import User
@@ -16,13 +16,16 @@ def register():
         # Validate and deserialize the input data
         data = user_schema.load(request.get_json())
     except ValidationError as err:
+        current_app.logger.error(f"Validation: {err.messages}")
         return jsonify({"error": "Validation Error", "message": err.messages}), 400
     
     # Check if username or email already exists
     if User.query.filter_by(username=data['username']).first():
+        current_app.logger.warning(f"Username already exists: {data['username']}")
         return jsonify({"error": "Username already exists"}), 400
     
     if User.query.filter_by(email=data['email']).first():
+        current_app.logger.warning(f"Email already exists: {data['email']}")
         return jsonify({"error": "Email already exists"}), 400
     
     # Create a new user
@@ -44,6 +47,7 @@ def login():
         # Validate and deserialize the input data
         data = user_schema.load(request.get_json)
     except ValidationError as err:
+        current_app.logger.error(f"Validation error: {err.messages}")
         return jsonify({"error": "Validation Error", "message": err.messages}), 400
 
     username = data['username']
@@ -53,7 +57,10 @@ def login():
     user = User.query.filter_by(username=username).first()
     if user and user.check_password(password):
         access_token = create_access_token(identity=str(user.id))
+        current_app.logger.info(f"User logged in: {user.username}")
         return jsonify(access_token=access_token), 200
+    
+    current_app.logger.warning(f"Invalid login attempt for username: {username}")
     return jsonify({"error": "Invalid credentials"}), 401
 
 
