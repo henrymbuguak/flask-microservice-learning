@@ -45,13 +45,17 @@ def register():
 def login():
     try:
         # Validate and deserialize the input data
-        data = user_schema.load(request.get_json)
+        data = user_schema.load(request.get_json())
+        print(data)
     except ValidationError as err:
         current_app.logger.error(f"Validation error: {err.messages}")
         return jsonify({"error": "Validation Error", "message": err.messages}), 400
 
     username = data['username']
     password = data['password']
+
+    # Log the received username and password
+    current_app.logger.info(f"Login attempt for username: {username}")
 
     # Find the user
     user = User.query.filter_by(username=username).first()
@@ -111,3 +115,15 @@ def delete_user(id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"message": "User deleted successfully"})
+
+@bp.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    if not user:
+        current_app.logger.warning(f"Unauthorized access attempt by user ID: {current_user_id}")
+        return jsonify({"error": "User not found"}), 404
+
+    current_app.logger.info(f"Authorized access by user: {user.username}")
+    return jsonify({"message": f"Hello, {user.username}!"}), 200
