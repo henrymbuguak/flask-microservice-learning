@@ -1390,11 +1390,160 @@ Your microservice is now thoroughly tested and ready for deployment.
 
 ---
 
-## **What’s Next?**
-In **Part 7**, you’ll dive into **containerizing your microservice with Docker**. Here’s what you’ll learn:
+## **Part 7: Containerizing Your Microservice with Docker**
+
+In **Part 7**, you’ll **containerize your Flask microservice using Docker**. Containerization simplifies deployment, ensures consistency across environments, and makes your application portable. By the end of this tutorial, you’ll have a Dockerized Flask microservice ready for deployment.
+
+---
+
+### **What You’ll Learn in Part 7**
+- Understand the benefits of containerization for microservices.
 - Create a `Dockerfile` for your Flask application.
 - Use Docker Compose to manage multi-container setups.
-- Run your application in a containerized environment.
+- Run your microservice in a containerized environment.
+- Optimize your Docker setup for production.
+
+---
+
+### **Step-by-Step Guide for Part 7**
+
+#### **Step 1: Create a Dockerfile**
+A `Dockerfile` is a script that defines how to build a Docker image for your application. Place the `Dockerfile` in the **root directory** of your project (at the same level as `README.md` and `user_management_microservice`). Here’s the `Dockerfile` tailored to your project structure:
+
+```Dockerfile
+# Use an official Python runtime as the base image
+FROM python:3.9-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the requirements file into the container
+COPY requirements.txt /app/
+COPY user_management_microservice/requirements.txt /app/user_management_microservice/
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r user_management_microservice/requirements.txt
+
+# Copy the application code into the container
+COPY . /app/
+
+# Expose the port the app runs on
+EXPOSE 5000
+
+# Set the entrypoint command to run the Flask application
+CMD ["python", "user_management_microservice/run.py"]
+```
+
+---
+
+#### **Step 2: Build the Docker Image**
+Build the Docker image using the `docker build` command:
+```bash
+docker build -t user-management-microservice .
+```
+
+- **`-t user-management-microservice`**: Tags the image with the name `user-management-microservice`.
+- **`.`**: Specifies the build context (current directory).
+
+---
+
+#### **Step 3: Run the Docker Container**
+Run the container using the `docker run` command:
+```bash
+docker run -p 5000:5000 user-management-microservice
+```
+
+- **`-p 5000:5000`**: Maps port 5000 on your local machine to port 5000 in the container.
+- **`user-management-microservice`**: The name of the Docker image to run.
+
+Visit `http://localhost:5000` in your browser to see your Flask microservice running in a Docker container.
+
+---
+
+#### **Step 4: Use Docker Compose for Multi-Container Setup**
+Docker Compose simplifies managing multi-container applications. Create a `docker-compose.yml` file in the root of your project:
+
+```yaml
+version: '3.8'
+
+services:
+  web:
+    image: user-management-microservice
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://user:password@db:5432/user_management
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_management
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+---
+
+#### **Step 5: Run the Application with Docker Compose**
+Start the application using Docker Compose:
+```bash
+docker-compose up
+```
+
+This command:
+- Builds the `web` service (if not already built).
+- Starts the `web` and `db` services.
+- Attaches logs to the terminal.
+
+Visit `http://localhost:5000` to see your microservice running with a PostgreSQL database.
+
+---
+
+#### **Step 6: Optimize for Production**
+To prepare your Docker setup for production:
+1. **Use Environment Variables for Secrets**:
+   - Store sensitive data (e.g., database credentials, JWT secret) in environment variables or a secrets manager.
+2. **Use a Production Web Server**:
+   - Replace Flask’s development server with `gunicorn` or `uWSGI`.
+3. **Minimize Image Size**:
+   - Use multi-stage builds to reduce the final image size.
+4. **Add Health Checks**:
+   - Add health checks to ensure your application is running correctly.
+
+---
+
+## **Summary**
+In this section, you:
+1. Learned the benefits of containerization.
+2. Created a `Dockerfile` for your Flask microservice.
+3. Built and ran a Docker container.
+4. Used Docker Compose to manage a multi-container setup.
+5. Optimized your Docker setup for production.
+
+Your microservice is now containerized and ready for deployment.
+
+---
+
+## **What’s Next?**
+In **Part 8**, you’ll dive into **deploying your Flask app to production**. Here’s what you’ll learn:
+- Choose a cloud provider (e.g., AWS, GCP, Heroku).
+- Deploy your Dockerized microservice.
+- Set up a production-ready database.
+- Configure DNS and SSL for your application.
 
 Stay tuned! 🚀
 
