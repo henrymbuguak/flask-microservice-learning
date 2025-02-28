@@ -5,7 +5,6 @@ from prometheus_flask_exporter import PrometheusMetrics
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
-from config import Config
 
 db = SQLAlchemy()
 jwt = JWTManager()
